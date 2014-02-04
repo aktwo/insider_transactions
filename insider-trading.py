@@ -3,12 +3,42 @@ import urllib2
 import datetime
 import re
 from bs4 import BeautifulSoup
+import Queue
+import threading
 
 # First argument is the historical window that we want to search
 numDays = int(argv[1])
 
 # Text file containing list of tickers
 tickerFile = argv[2]
+
+def displayOutput(resultQueue, errorQueue):
+  finalResult = sorted(list(resultQueue.queue), key=lambda x: x[1], reverse=True)
+  for item in finalResult:
+    print item[0].upper() + " : " + str(item[1])
+  # FIXME: Print out tickers that had errors
+
+# Helper function to get purchasing data for each ticker
+def processTicker(ticker, resultQueue, errorQueue):
+  #Open URL and extract insider trading table
+  url = "http://finance.yahoo.com/q/it?s=" + ticker + "+Insider+Transactions"
+  html = urllib2.urlopen(url).read()
+  soup = BeautifulSoup(html, 'lxml')
+  try:
+    table = soup.find_all('table')[14]
+    rows = table.find_all('tr')
+    # For each row, populate the number of purchases for that ticker
+    trades = {}
+    for row in rows[1:]:
+      parseRow(row, trades)
+    # Get total number of purchases
+    try:
+      resultQueue.put((ticker, trades["Purchase"]))
+    except:
+      resultQueue.put((ticker, 0))
+  except:
+    errorQueue.put(ticker)
+    resultQueue.put((ticker, 0))
 
 # Helper function to get list of tickers from file
 def getTickers(tickerFile):
@@ -47,34 +77,11 @@ def getTradeType(string):
   return tradeType
 
 # Main loop
-errorTickers = ""
-insiderActivity = {}
+insiderActivity = Queue.Queue()
+errorTickers = Queue.Queue()
 tickers = getTickers(tickerFile)
+
 for ticker in tickers:
+  processTicker(ticker, insiderActivity, errorTickers)
 
-  #Open URL and extract insider trading table
-  url = "http://finance.yahoo.com/q/it?s=" + ticker + "+Insider+Transactions"
-  html = urllib2.urlopen(url).read()
-  soup = BeautifulSoup(html, 'lxml')
-  try:
-    table = soup.find_all('table')[14]
-    rows = table.find_all('tr')
-    # For each row, populate the number of purchases for that ticker
-    trades = {}
-    for row in rows[1:]:
-      parseRow(row, trades)
-    # Get total number of purchases
-    try:
-      insiderActivity[ticker] = trades["Purchase"]
-    except:
-      insiderActivity[ticker] = 0
-  except:
-    errorTickers = ticker + ", " + errorTickers
-    insiderActivity[ticker] = 0
-
-finalResult = sorted(insiderActivity.items(), key=lambda x: x[1], reverse=True)
-for item in finalResult:
-  print item[0].upper() + " : " + str(item[1])
-
-print "The following tickers could not be loaded:"
-print errorTickers
+displayOutput(insiderActivity, errorTickers)
