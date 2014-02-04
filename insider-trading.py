@@ -13,7 +13,7 @@ numDays = int(argv[1])
 tickerFile = argv[2]
 
 def displayOutput(resultQueue, errorQueue):
-  finalResult = sorted(list(resultQueue.queue), key=lambda x: x[1], reverse=True)
+  finalResult = sorted(list(resultQueue.queue), key=lambda x: x[1])
   for item in finalResult:
     print item[0].upper() + " : " + str(item[1])
   # FIXME: Print out tickers that had errors
@@ -21,6 +21,7 @@ def displayOutput(resultQueue, errorQueue):
 # Helper function to get purchasing data for each ticker
 def processTicker(ticker, resultQueue, errorQueue):
   #Open URL and extract insider trading table
+  print "Fetching data for " + ticker.upper()
   url = "http://finance.yahoo.com/q/it?s=" + ticker + "+Insider+Transactions"
   html = urllib2.urlopen(url).read()
   soup = BeautifulSoup(html, 'lxml')
