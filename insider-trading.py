@@ -36,7 +36,13 @@ def parseRow(row, data):
 
 # FIXME: make buy, sell or null
 def parseTrade(string):
-  return string
+  pattern = re.compile("(?P<tradeType>.*) at (.*) per share")
+  tradeType = pattern.search(string).groupdict()["tradeType"]
+  #This will be either sale, purchase or other things
+  if(tradeType):
+    return tradeType
+  else:
+    return "Other"
 
 for ticker in tickers:
   url = "http://finance.yahoo.com/q/it?s=" + ticker + "+Insider+Transactions"
