@@ -6,6 +6,27 @@ from bs4 import BeautifulSoup
 import Queue
 import threading
 
+if (argv[1] == '-h'):
+  print """
+
+  Insider Trading Monitor
+
+  This program prints out the number of shares purchased
+  by insiders (i.e. executives) in a recent time window.
+
+  Usage: python insider-trading.py <window> <input_file>
+
+  <window> : Historical window
+    - For example, a value of 7 would return all insider
+     trades in the last 7 days
+  <input_file> : Ticker file
+    - A text file containing one stock ticker per line
+
+  Dependencies: BeautifulSoup
+
+  """
+  exit()
+
 # First argument is the historical window that we want to search
 numDays = int(argv[1])
 
